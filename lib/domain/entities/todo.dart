@@ -3,8 +3,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hive/hive.dart';
 part 'todo.g.dart';
 
+// @HiveType(typeId: 3)
 enum TaskPriority { high, medium, low }
 
+@HiveType(typeId: 1)
 class SubTask extends Equatable {
   final String? id;
   final String? title;

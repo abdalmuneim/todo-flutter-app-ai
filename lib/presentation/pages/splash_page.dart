@@ -20,22 +20,22 @@ class _SplashPageState extends State<SplashPage> {
 
   Future<void> _checkAuth() async {
     await Future.delayed(const Duration(seconds: 2));
-    if (!mounted) return;
+    /* if (!mounted) return;
 
     final authProvider = context.read<AuthProvider>();
     await authProvider.checkAuthState();
 
     if (!mounted) return;
 
-    if (authProvider.isAuthenticated) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const HomePage()),
-      );
+    if (authProvider.isAuthenticated) { */
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => const HomePage()),
+    ); /* 
     } else {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const LoginPage()),
       );
-    }
+    } */
   }
 
   @override
