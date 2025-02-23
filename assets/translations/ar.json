@@ -1,0 +1,43 @@
+{
+  "app": {
+    "title": "مدير المهام",
+    "tasks": "المهام",
+    "profile": "الملف الشخصي",
+    "settings": "الإعدادات"
+  },
+  "auth": {
+    "email": "البريد الإلكتروني",
+    "password": "كلمة المرور",
+    "login": "تسجيل الدخول",
+    "register": "إنشاء حساب",
+    "forgot_password": "نسيت كلمة المرور؟",
+    "logout": "تسجيل الخروج"
+  },
+  "task": {
+    "title": "العنوان",
+    "description": "الوصف",
+    "add": "إضافة مهمة",
+    "edit": "تعديل المهمة",
+    "delete": "حذف المهمة",
+    "priority": {
+      "title": "الأولوية",
+      "high": "عالية",
+      "medium": "متوسطة",
+      "low": "منخفضة"
+    },
+    "status": {
+      "completed": "مكتملة",
+      "pending": "قيد الانتظار"
+    },
+    "subtasks": "المهام الفرعية",
+    "add_subtask": "إضافة مهمة فرعية"
+  },
+  "profile": {
+    "edit_profile": "تعديل الملف الشخصي",
+    "completed_tasks": "المهام المكتملة",
+    "pending_tasks": "المهام قيد الانتظار",
+    "total_tasks": "إجمالي المهام",
+    "save": "حفظ التغييرات",
+    "upload_photo": "رفع صورة"
+  }
+}

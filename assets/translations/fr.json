@@ -1,0 +1,43 @@
+{
+  "app": {
+    "title": "Gestionnaire de Tâches",
+    "tasks": "Tâches",
+    "profile": "Profil",
+    "settings": "Paramètres"
+  },
+  "auth": {
+    "email": "Email",
+    "password": "Mot de passe",
+    "login": "Connexion",
+    "register": "S'inscrire",
+    "forgot_password": "Mot de passe oublié?",
+    "logout": "Déconnexion"
+  },
+  "task": {
+    "title": "Titre",
+    "description": "Description",
+    "add": "Ajouter une tâche",
+    "edit": "Modifier la tâche",
+    "delete": "Supprimer la tâche",
+    "priority": {
+      "title": "Priorité",
+      "high": "Haute",
+      "medium": "Moyenne",
+      "low": "Basse"
+    },
+    "status": {
+      "completed": "Terminée",
+      "pending": "En attente"
+    },
+    "subtasks": "Sous-tâches",
+    "add_subtask": "Ajouter une sous-tâche"
+  },
+  "profile": {
+    "edit_profile": "Modifier le profil",
+    "completed_tasks": "Tâches terminées",
+    "pending_tasks": "Tâches en attente",
+    "total_tasks": "Total des tâches",
+    "save": "Enregistrer",
+    "upload_photo": "Télécharger une photo"
+  }
+}

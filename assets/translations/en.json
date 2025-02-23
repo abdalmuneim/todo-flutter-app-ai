@@ -1,0 +1,43 @@
+{
+  "app": {
+    "title": "Task Manager",
+    "tasks": "Tasks",
+    "profile": "Profile",
+    "settings": "Settings"
+  },
+  "auth": {
+    "email": "Email",
+    "password": "Password",
+    "login": "Login",
+    "register": "Register",
+    "forgot_password": "Forgot Password?",
+    "logout": "Logout"
+  },
+  "task": {
+    "title": "Title",
+    "description": "Description",
+    "add": "Add Task",
+    "edit": "Edit Task",
+    "delete": "Delete Task",
+    "priority": {
+      "title": "Priority",
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "status": {
+      "completed": "Completed",
+      "pending": "Pending"
+    },
+    "subtasks": "Subtasks",
+    "add_subtask": "Add Subtask"
+  },
+  "profile": {
+    "edit_profile": "Edit Profile",
+    "completed_tasks": "Completed Tasks",
+    "pending_tasks": "Pending Tasks",
+    "total_tasks": "Total Tasks",
+    "save": "Save Changes",
+    "upload_photo": "Upload Photo"
+  }
+}
