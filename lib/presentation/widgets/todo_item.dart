@@ -70,16 +70,55 @@ class TodoItem extends StatelessWidget {
                           : theme.textTheme.bodyMedium?.color,
                     ),
                   ),
-                  subtitle: Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text(
-                      todo.description ?? "",
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: theme.textTheme.bodyMedium?.color
-                            ?.withValues(alpha: .8),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (todo.description?.isNotEmpty ?? false)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            todo.description ?? "",
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: theme.textTheme.bodyMedium?.color?.withOpacity(0.8),
+                            ),
+                          ),
+                        ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.flag,
+                            size: 16,
+                            color: todo.priority == TaskPriority.high
+                                ? Colors.red
+                                : todo.priority == TaskPriority.medium
+                                    ? Colors.orange
+                                    : Colors.green,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${todo.priority?.name[0].toUpperCase()}${todo.priority?.name.substring(1) ?? ''} Priority',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Icon(
+                            Icons.access_time,
+                            size: 16,
+                            color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _formatDate(todo.createdAt),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
+                    ],
                   ),
                   leading: Transform.scale(
                     scale: 1.2,
@@ -101,18 +140,6 @@ class TodoItem extends StatelessWidget {
                     tooltip: 'Edit Todo',
                   ),
                 ),
-                Padding(
-                  padding:
-                      const EdgeInsets.only(left: 16, right: 16, bottom: 12),
-                  child: Text(
-                    'Created: ${_formatDate(todo.createdAt ?? DateTime.now())}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: theme.textTheme.bodySmall?.color
-                          ?.withValues(alpha: .6),
-                    ),
-                  ),
-                ),
               ],
             ),
           ),
@@ -121,7 +148,22 @@ class TodoItem extends StatelessWidget {
     );
   }
 
-  String _formatDate(DateTime date) {
+  String _formatDate(DateTime? date) {
+    if (date == null) return '';
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inDays == 0) {
+      if (difference.inHours == 0) {
+        return '${difference.inMinutes}m ago';
+      }
+      return '${difference.inHours}h ago';
+    } else if (difference.inDays == 1) {
+      return 'Yesterday';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays}d ago';
+    }
+
     return '${date.day}/${date.month}/${date.year}';
   }
 

@@ -1,0 +1,43 @@
+{
+  "app": {
+    "title": "Aufgabenverwaltung",
+    "tasks": "Aufgaben",
+    "profile": "Profil",
+    "settings": "Einstellungen"
+  },
+  "auth": {
+    "email": "E-Mail",
+    "password": "Passwort",
+    "login": "Anmelden",
+    "register": "Registrieren",
+    "forgot_password": "Passwort vergessen?",
+    "logout": "Abmelden"
+  },
+  "task": {
+    "title": "Titel",
+    "description": "Beschreibung",
+    "add": "Aufgabe hinzufügen",
+    "edit": "Aufgabe bearbeiten",
+    "delete": "Aufgabe löschen",
+    "priority": {
+      "title": "Priorität",
+      "high": "Hoch",
+      "medium": "Mittel",
+      "low": "Niedrig"
+    },
+    "status": {
+      "completed": "Abgeschlossen",
+      "pending": "Ausstehend"
+    },
+    "subtasks": "Unteraufgaben",
+    "add_subtask": "Unteraufgabe hinzufügen"
+  },
+  "profile": {
+    "edit_profile": "Profil bearbeiten",
+    "completed_tasks": "Abgeschlossene Aufgaben",
+    "pending_tasks": "Ausstehende Aufgaben",
+    "total_tasks": "Gesamtaufgaben",
+    "save": "Änderungen speichern",
+    "upload_photo": "Foto hochladen"
+  }
+}

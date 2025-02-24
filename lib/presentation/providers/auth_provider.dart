@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -7,8 +10,7 @@ class AuthProvider with ChangeNotifier {
   final firebase_auth.FirebaseAuth _auth = firebase_auth.FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  app.User? _user;
-  firebase_auth.User? currentUser;
+  app.User? _user; 
   bool _isLoading = false;
   String? _error;
 
@@ -16,8 +18,7 @@ class AuthProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get isAuthenticated => _user != null;
-
-  Future<void> signUp({
+  Future<bool> signUp({
     required String email,
     required String password,
     required String displayName,
@@ -27,23 +28,58 @@ class AuthProvider with ChangeNotifier {
       _error = null;
       notifyListeners();
 
-      final userCredential = await _auth.createUserWithEmailAndPassword(
+      // Create user in Firebase Auth
+      await _auth
+          .createUserWithEmailAndPassword(
         email: email,
         password: password,
-      );
-      currentUser = userCredential.user;
-      final user = app.User(
-        id: userCredential.user!.uid,
-        email: email,
-        displayName: displayName,
-        language: 'en',
-        createdAt: DateTime.now(),
-      );
+      )
+          .then(
+        (value) async {
 
-      await _firestore.collection('users').doc(user.id).set(user.toJson());
-      _user = user;
+          // Ensure the user is not null
+          if (value.user == null) {
+            throw Exception('User creation failed: User is null');
+          }
+
+          // Update display name in Firebase Auth
+          await value.user?.updateDisplayName(displayName).catchError(
+                (err) => log("Error updating display name: $err"),
+              );
+
+          // Create our app user
+          final user = app.User(
+            id: value.user!.uid,
+            email: email,
+            displayName: displayName,
+            language: 'en',
+          );
+
+          // Save user data to Firestore
+          await _firestore
+              .collection('users')
+              .doc(user.id)
+              .set(user.toJson(), SetOptions(merge: true))
+              .catchError(
+                (err) => log("Error saving user data: $err"),
+              );
+
+          // Set current user
+          _user = user;
+
+          return value;
+        },
+      ).catchError(
+        (err) {
+          log("Error creating user: $err");
+          throw err;
+        },
+      );
+        return true;
     } catch (e) {
       _error = e.toString();
+      print('Sign up error: $_error');
+      rethrow;
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -64,15 +100,34 @@ class AuthProvider with ChangeNotifier {
         password: password,
       );
 
-      currentUser = userCredential.user;
-      final userData = await _firestore
+      // Get user data from Firestore
+      final userDoc = await _firestore
           .collection('users')
           .doc(userCredential.user!.uid)
           .get();
 
-      _user = app.User.fromJson(userData.data()!);
+      if (userDoc.exists) {
+        _user = app.User.fromJson(userDoc.data()!);
+      } else {
+        // If user document doesn't exist, create it
+        final user = app.User(
+          id: userCredential.user!.uid,
+          email: email,
+          displayName: userCredential.user?.displayName ?? email.split('@')[0],
+          language: 'en',
+          createdAt: DateTime.now(),
+        );
+
+        await _firestore
+            .collection('users')
+            .doc(user.id)
+            .set(user.toJson(), SetOptions(merge: true));
+
+        _user = user;
+      }
     } catch (e) {
       _error = e.toString();
+      print('Sign in error: $_error');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -83,6 +138,7 @@ class AuthProvider with ChangeNotifier {
     try {
       await _auth.signOut();
       _user = null;
+      
       notifyListeners();
     } catch (e) {
       _error = e.toString();
@@ -100,8 +156,14 @@ class AuthProvider with ChangeNotifier {
       _error = null;
       notifyListeners();
 
-      if (_user == null) return;
+      if (_user == null) throw Exception('No user logged in');
 
+      // Update Firebase Auth display name if provided
+      if (displayName != null) {
+        await _auth.currentUser?.updateDisplayName(displayName);
+      }
+
+      // Update Firestore user data
       final updatedUser = _user!.copyWith(
         displayName: displayName,
         photoUrl: photoUrl,
@@ -111,7 +173,7 @@ class AuthProvider with ChangeNotifier {
       await _firestore
           .collection('users')
           .doc(_user!.id)
-          .update(updatedUser.toJson());
+          .set(updatedUser.toJson(), SetOptions(merge: true));
 
       _user = updatedUser;
     } catch (e) {

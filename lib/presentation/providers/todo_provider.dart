@@ -1,31 +1,42 @@
 import 'package:flutter/foundation.dart';
-import 'package:test/presentation/providers/auth_provider.dart';
+import 'package:uuid/uuid.dart';
 import '../../domain/entities/todo.dart';
 import '../../domain/repositories/todo_repository.dart';
+import 'auth_provider.dart';
 
 class TodoProvider with ChangeNotifier {
   final TodoRepository repository;
   final AuthProvider authProvider;
-
   List<Todo> _todos = [];
-  bool _isLoading = false;
   String? _error;
+  bool _isLoading = false;
 
-  TodoProvider({required this.authProvider, required this.repository}) {
-    loadTodos();
+  TodoProvider({
+    required this.repository,
+    required this.authProvider,
+  }) {
+    _loadTodos();
   }
 
   List<Todo> get todos => _todos;
-  bool get isLoading => _isLoading;
   String? get error => _error;
+  bool get isLoading => _isLoading;
 
-  Future<void> loadTodos() async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
-
+  Future<void> _loadTodos() async {
     try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
       _todos = await repository.getTodos();
+      _todos.sort((a, b) {
+        // First sort by priority (high to low)
+        final priorityCompare = (b.priority?.index ?? 1).compareTo(a.priority?.index ?? 1);
+        if (priorityCompare != 0) return priorityCompare;
+        
+        // Then sort by date (newest to oldest)
+        return (b.createdAt ?? DateTime.now()).compareTo(a.createdAt ?? DateTime.now());
+      });
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -34,40 +45,24 @@ class TodoProvider with ChangeNotifier {
     }
   }
 
-  Future<void> addTodo(String title, String description) async {
+  Future<void> addTodo(
+    String title,
+    String description, {
+    TaskPriority priority = TaskPriority.medium,
+  }) async {
     try {
-      final userId = authProvider.currentUser?.uid;
-      if (userId == null) throw Exception('User not authenticated');
-
+      _error = null;
       final todo = Todo(
-        userId: userId,
-        id: DateTime.now().toString(),
         title: title,
         description: description,
         createdAt: DateTime.now(),
+        isCompleted: false,
+        priority: priority,
+        subTasks: [],
       );
+
       await repository.addTodo(todo);
-      await loadTodos();
-    } catch (e) {
-      _error = e.toString();
-      notifyListeners();
-    }
-  }
-
-  Future<void> updateTodo(Todo todo) async {
-    try {
-      await repository.updateTodo(todo);
-      await loadTodos();
-    } catch (e) {
-      _error = e.toString();
-      notifyListeners();
-    }
-  }
-
-  Future<void> deleteTodo(String id) async {
-    try {
-      await repository.deleteTodo(id);
-      await loadTodos();
+      await _loadTodos(); // Reload to get the server-generated ID
     } catch (e) {
       _error = e.toString();
       notifyListeners();
@@ -76,8 +71,31 @@ class TodoProvider with ChangeNotifier {
 
   Future<void> toggleTodoStatus(String id) async {
     try {
+      _error = null;
       await repository.toggleTodoStatus(id);
-      await loadTodos();
+      await _loadTodos(); // Reload to get the updated state
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+    }
+  }
+
+  Future<void> updateTodo(Todo todo) async {
+    try {
+      _error = null;
+      await repository.updateTodo(todo);
+      await _loadTodos(); // Reload to get the updated state
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+    }
+  }
+
+  Future<void> deleteTodo(String id) async {
+    try {
+      _error = null;
+      await repository.deleteTodo(id);
+      await _loadTodos(); // Reload to get the updated state
     } catch (e) {
       _error = e.toString();
       notifyListeners();

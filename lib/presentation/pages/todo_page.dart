@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../domain/entities/todo.dart';
 import '../providers/todo_provider.dart';
 import '../widgets/todo_item.dart';
 
@@ -78,15 +79,78 @@ class TodoPage extends StatelessWidget {
             );
           }
 
+          // Group todos by priority
+          final groupedTodos = <TaskPriority, List<Todo>>{};
+          for (final priority in TaskPriority.values) {
+            groupedTodos[priority] = todoProvider.todos
+                .where((todo) => todo.priority == priority)
+                .toList();
+          }
+
           return CustomScrollView(
             slivers: [
               SliverPadding(
                 padding: const EdgeInsets.only(top: 8),
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
-                    (context, index) =>
-                        TodoItem(todo: todoProvider.todos[index]),
-                    childCount: todoProvider.todos.length,
+                    (context, index) {
+                      final priority = TaskPriority.values[index];
+                      final todos = groupedTodos[priority] ?? [];
+                      if (todos.isEmpty) return const SizedBox.shrink();
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.flag,
+                                  size: 20,
+                                  color: priority == TaskPriority.high
+                                      ? Colors.red
+                                      : priority == TaskPriority.medium
+                                          ? Colors.orange
+                                          : Colors.green,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '${priority.name[0].toUpperCase()}${priority.name.substring(1)} Priority',
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    color: theme.colorScheme.onSurface
+                                        .withValues(alpha: .8),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.primary
+                                        .withValues(alpha: .1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    '${todos.length}',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.primary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          ...todos.map((todo) => TodoItem(todo: todo)),
+                        ],
+                      );
+                    },
+                    childCount: TaskPriority.values.length,
                   ),
                 ),
               ),
@@ -106,60 +170,98 @@ class TodoPage extends StatelessWidget {
     final titleController = TextEditingController();
     final descriptionController = TextEditingController();
     final theme = Theme.of(context);
+    TaskPriority selectedPriority = TaskPriority.medium;
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('New Task', style: theme.textTheme.titleLarge),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: titleController,
-              decoration: InputDecoration(
-                labelText: 'Title',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text('New Task', style: theme.textTheme.titleLarge),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: titleController,
+                decoration: InputDecoration(
+                  labelText: 'Title',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
                 ),
-                filled: true,
+                textCapitalization: TextCapitalization.sentences,
               ),
-              textCapitalization: TextCapitalization.sentences,
+              const SizedBox(height: 16),
+              TextField(
+                controller: descriptionController,
+                decoration: InputDecoration(
+                  labelText: 'Description',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                ),
+                maxLines: 3,
+                textCapitalization: TextCapitalization.sentences,
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<TaskPriority>(
+                value: selectedPriority,
+                decoration: InputDecoration(
+                  labelText: 'Priority',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                ),
+                items: TaskPriority.values.map((priority) {
+                  final label = priority.name[0].toUpperCase() + priority.name.substring(1);
+                  final color = priority == TaskPriority.high 
+                      ? Colors.red 
+                      : priority == TaskPriority.medium 
+                          ? Colors.orange 
+                          : Colors.green;
+                  
+                  return DropdownMenuItem(
+                    value: priority,
+                    child: Row(
+                      children: [
+                        Icon(Icons.flag, color: color, size: 20),
+                        const SizedBox(width: 8),
+                        Text(label),
+                      ],
+                    ),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  
+                  setState(() => selectedPriority = value!);
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel',
+                  style: TextStyle(color: theme.colorScheme.secondary)),
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: descriptionController,
-              decoration: InputDecoration(
-                labelText: 'Description',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                filled: true,
-              ),
-              maxLines: 3,
-              textCapitalization: TextCapitalization.sentences,
+            FilledButton(
+              onPressed: () {
+                if (titleController.text.trim().isNotEmpty) {
+                  context.read<TodoProvider>().addTodo(
+                        titleController.text.trim(),
+                        descriptionController.text.trim(),
+                        priority: selectedPriority,
+                      );
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text('Add Task'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel',
-                style: TextStyle(color: theme.colorScheme.secondary)),
-          ),
-          FilledButton(
-            onPressed: () {
-              if (titleController.text.isNotEmpty) {
-                context.read<TodoProvider>().addTodo(
-                      titleController.text,
-                      descriptionController.text,
-                    );
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('Add'),
-          ),
-        ],
       ),
     );
   }

@@ -1,0 +1,43 @@
+{
+  "app": {
+    "title": "Gestor de Tareas",
+    "tasks": "Tareas",
+    "profile": "Perfil",
+    "settings": "Ajustes"
+  },
+  "auth": {
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "login": "Iniciar sesión",
+    "register": "Registrarse",
+    "forgot_password": "¿Olvidaste tu contraseña?",
+    "logout": "Cerrar sesión"
+  },
+  "task": {
+    "title": "Título",
+    "description": "Descripción",
+    "add": "Añadir Tarea",
+    "edit": "Editar Tarea",
+    "delete": "Eliminar Tarea",
+    "priority": {
+      "title": "Prioridad",
+      "high": "Alta",
+      "medium": "Media",
+      "low": "Baja"
+    },
+    "status": {
+      "completed": "Completada",
+      "pending": "Pendiente"
+    },
+    "subtasks": "Subtareas",
+    "add_subtask": "Añadir Subtarea"
+  },
+  "profile": {
+    "edit_profile": "Editar Perfil",
+    "completed_tasks": "Tareas Completadas",
+    "pending_tasks": "Tareas Pendientes",
+    "total_tasks": "Total de Tareas",
+    "save": "Guardar Cambios",
+    "upload_photo": "Subir Foto"
+  }
+}

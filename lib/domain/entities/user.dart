@@ -2,39 +2,38 @@ import 'package:equatable/equatable.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class User extends Equatable {
-  final String id;
-  final String email;
-  final String displayName;
+  final String? id;
+  final String? email;
+  final String? displayName;
   final String? photoUrl;
-  final String language;
-  final DateTime createdAt;
+  final String? language;
+  final DateTime? createdAt;
 
   const User({
-    required this.id,
-    required this.email,
-    required this.displayName,
+     this.id,
+     this.email,
+     this.displayName,
     this.photoUrl,
-    required this.language,
-    required this.createdAt,
-  });
-
+    this. language,
+     this.createdAt,
+  })  ;
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'email': email,
-    'displayName': displayName,
-    'photoUrl': photoUrl,
-    'language': language,
-    'createdAt': Timestamp.fromDate(createdAt),
-  };
+        'id': id,
+        'email': email,
+        'display_name': displayName,
+        'photo_url': photoUrl,
+        'language': language,
+        'created_at':createdAt!=null ? Timestamp.fromDate(createdAt!) : Timestamp.now(),
+      };
 
   factory User.fromJson(Map<String, dynamic> json) => User(
-    id: json['id'] as String,
-    email: json['email'] as String,
-    displayName: json['displayName'] as String,
-    photoUrl: json['photoUrl'] as String?,
-    language: json['language'] as String,
-    createdAt: (json['createdAt'] as Timestamp).toDate(),
-  );
+        id: json['id'] as String,
+        email: json['email'] as String,
+        displayName: json['display_name'] as String,
+        photoUrl: json['photo_url'] as String?,
+        language: json['language'] as String,
+        createdAt: (json['created_at'] as Timestamp).toDate(),
+      );
 
   User copyWith({
     String? displayName,
