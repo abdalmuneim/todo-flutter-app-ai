@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:intl/intl.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 
@@ -41,7 +40,9 @@ class NotificationService {
 
       // Request notification permissions
       await androidPlugin?.requestNotificationsPermission();
-      
+      await androidPlugin?.requestExactAlarmsPermission();
+      await androidPlugin?.requestFullScreenIntentPermission();
+
       // Create notification channel
       await androidPlugin?.createNotificationChannel(channel);
     }
@@ -62,10 +63,10 @@ class NotificationService {
     );
 
     // Test immediate notification
-    await showImmediateNotification(
-      title: "Notification Test",
-      body: "This is a test notification. If you see this, notifications are working!",
-    );
+    // await showImmediateNotification(
+    //   title: "Notification Test",
+    //   body: "This is a test notification. If you see this, notifications are working!",
+    // );
   }
 
   Future<void> showImmediateNotification({
@@ -134,21 +135,23 @@ class NotificationService {
       }
 
       // First send an immediate test notification
-      await showImmediateNotification(
-        title: "Scheduling Task Reminder",
-        body: "Your reminder will be set for: ${scheduledDate.toString()}",
-      );
+      // await showImmediateNotification(
+      //   title: "Scheduling Task Reminder",
+      //   body: "Your reminder will be set for: ${scheduledDate.toString()}",
+      // );
 
       // Calculate the scheduled time
       final now = tz.TZDateTime.now(tz.local);
       var scheduledTime = tz.TZDateTime.from(scheduledDate, tz.local);
-      
+
       // If the time is in the past, schedule for 30 seconds from now (for testing)
       if (scheduledTime.isBefore(now)) {
         scheduledTime = now.add(const Duration(seconds: 30));
-        debugPrint('Scheduled time was in the past, rescheduling for 30 seconds from now');
+        debugPrint(
+            'Scheduled time was in the past, rescheduling for 30 seconds from now');
+      } else {
+        scheduledTime = scheduledTime.subtract(Duration(minutes: 10));
       }
-
       debugPrint('Current time: ${now.toString()}');
       debugPrint('Scheduling notification for: ${scheduledTime.toString()}');
 
@@ -157,8 +160,7 @@ class NotificationService {
         id,
         title,
         body,
-        _nextInstanceOfTenAM(
-          scheduledDate.hour, scheduledDate.minute,10, "", ""),
+        scheduledTime,
         NotificationDetails(
           android: AndroidNotificationDetails(
             channel.id,
@@ -185,49 +187,6 @@ class NotificationService {
       debugPrint('Error scheduling notification: $e');
       rethrow;
     }
-  }
-
-  
-  tz.TZDateTime _nextInstanceOfTenAM(
-      int hour, int minutes, int remained, String repeat, String date) {
-
-    final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
-    print('time now: $now');
-
-    DateTime formatDate = DateFormat.yMd().parse(date);
-    final tz.TZDateTime fd = tz.TZDateTime.from(formatDate,tz.local);
-    print('fd: $fd');
-
-    tz.TZDateTime scheduledDate = tz.TZDateTime(tz.local, fd.year,
-        fd.month, fd.day, hour, minutes);
-    print('scheduledDate: $scheduledDate');
-
-    scheduledDate = _afterRemained(remained, scheduledDate);
-    print('after back from remained scheduledDate 1: $scheduledDate');
-
-    if (scheduledDate.isBefore(now)) {
-      if (repeat == 'Daily') {
-        scheduledDate = tz.TZDateTime(
-            tz.local, now.year, now.month, (formatDate.day) + 1, hour, minutes);
-      } else if (repeat == 'Weekly') {
-        scheduledDate = tz.TZDateTime(
-            tz.local, now.year, now.month, (formatDate.day) + 7, hour, minutes);
-      } else if (repeat == 'Monthly') {
-        scheduledDate = tz.TZDateTime(tz.local, now.year,
-            (formatDate.month) + 1, formatDate.day, hour, minutes);
-      } else {
-        scheduledDate = tz.TZDateTime(tz.local, now.year,
-            (formatDate.month), formatDate.day, hour, minutes);
-      }
-      scheduledDate = _afterRemained(remained, scheduledDate);
-    }
-    print('next scheduledDate: $scheduledDate');
-    return scheduledDate;
-  }
-
-  tz.TZDateTime _afterRemained(int remained, tz.TZDateTime scheduledDate) {
-    scheduledDate = scheduledDate.subtract(Duration(minutes: remained));
-    return scheduledDate;
   }
 
   Future<void> cancelNotification(int id) async {
