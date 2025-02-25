@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:test/core/services/notification_service.dart';
 import 'package:test/presentation/pages/auth/login_page.dart';
 import 'package:test/presentation/pages/home_page.dart';
 import '../providers/auth_provider.dart';
@@ -14,6 +15,7 @@ class SplashPage extends StatefulWidget {
 class _SplashPageState extends State<SplashPage> {
   @override
   void initState() {
+   NotificationService().init();
     super.initState();
     _checkAuth();
   }

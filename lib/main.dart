@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'core/services/notification_service.dart';
 import 'firebase_options.dart';
 import 'presentation/providers/todo_provider.dart';
 import 'presentation/providers/auth_provider.dart';
@@ -15,7 +14,6 @@ import 'core/di/injection_container.dart' as di;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await NotificationService().init();
   await EasyLocalization.ensureInitialized();
   await di.init();
 
