@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../domain/entities/todo.dart';
+import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart';
 import '../providers/todo_provider.dart';
 import '../widgets/todo_item.dart';
+import '../../core/services/notification_service.dart';
+import '../../domain/entities/todo.dart';
 
 class TodoPage extends StatelessWidget {
   const TodoPage({super.key});
@@ -57,20 +59,20 @@ class TodoPage extends StatelessWidget {
                   Icon(
                     Icons.task_outlined,
                     size: 64,
-                    color: theme.colorScheme.primary.withValues(alpha: .5),
+                    color: theme.colorScheme.primary.withOpacity(0.5),
                   ),
                   const SizedBox(height: 16),
                   Text(
                     'No tasks yet',
                     style: theme.textTheme.headlineSmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: .8),
+                      color: theme.colorScheme.onSurface.withOpacity(0.8),
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Add your first task by tapping the + button',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: .6),
+                      color: theme.colorScheme.onSurface.withOpacity(0.6),
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -169,17 +171,20 @@ class TodoPage extends StatelessWidget {
   void _showAddTodoDialog(BuildContext context) {
     final titleController = TextEditingController();
     final descriptionController = TextEditingController();
-    final theme = Theme.of(context);
+    DateTime? selectedStartDate;
+    TimeOfDay? selectedStartTime; 
     TaskPriority selectedPriority = TaskPriority.medium;
+    final theme = Theme.of(context);
 
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: Text('New Task', style: theme.textTheme.titleLarge),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          content: Column(
+      builder: (context) => AlertDialog(
+        title: Text('New Task', style: theme.textTheme.titleLarge),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        content: SingleChildScrollView(
+          child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               TextField(
                 controller: titleController,
@@ -206,62 +211,148 @@ class TodoPage extends StatelessWidget {
                 textCapitalization: TextCapitalization.sentences,
               ),
               const SizedBox(height: 16),
-              DropdownButtonFormField<TaskPriority>(
-                value: selectedPriority,
-                decoration: InputDecoration(
-                  labelText: 'Priority',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
-                ),
-                items: TaskPriority.values.map((priority) {
-                  final label = priority.name[0].toUpperCase() + priority.name.substring(1);
-                  final color = priority == TaskPriority.high 
-                      ? Colors.red 
-                      : priority == TaskPriority.medium 
-                          ? Colors.orange 
-                          : Colors.green;
-                  
-                  return DropdownMenuItem(
-                    value: priority,
-                    child: Row(
+              StatefulBuilder(
+                builder: (context, setState) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Priority',
+                      style: theme.textTheme.titleSmall,
+                    ),
+                    const SizedBox(height: 8),
+                    SegmentedButton<TaskPriority>(
+                      segments: [
+                        ButtonSegment<TaskPriority>(
+                          value: TaskPriority.low,
+                          icon: Icon(
+                            Icons.flag,
+                            color: Colors.green,
+                          ),
+                          label: Text('Low'),
+                        ),
+                        ButtonSegment<TaskPriority>(
+                          value: TaskPriority.medium,
+                          icon: Icon(
+                            Icons.flag,
+                            color: Colors.orange,
+                          ),
+                          label: Text('Medium'),
+                        ),
+                        ButtonSegment<TaskPriority>(
+                          value: TaskPriority.high,
+                          icon: Icon(
+                            Icons.flag,
+                            color: Colors.red,
+                          ),
+                          label: Text('High'),
+                        ),
+                      ],
+                      selected: {selectedPriority},
+                      onSelectionChanged: (Set<TaskPriority> selected) {
+                        setState(() => selectedPriority = selected.first);
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Start Date & Time',
+                      style: theme.textTheme.titleSmall,
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
                       children: [
-                        Icon(Icons.flag, color: color, size: 20),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () async {
+                              final date = await DatePicker.showDatePicker(
+                                context,
+                                currentTime: selectedStartDate ?? DateTime.now(),
+                                minTime: DateTime.now(),
+                                maxTime: DateTime.now().add(
+                                  const Duration(days: 365),
+                                ),
+                              );
+                              if (date != null) {
+                                setState(() => selectedStartDate = date);
+                              }
+                            },
+                            icon: const Icon(Icons.calendar_today),
+                            label: Text(
+                              selectedStartDate != null
+                                  ? '${selectedStartDate!.day}/${selectedStartDate!.month}/${selectedStartDate!.year}'
+                                  : 'Start Date',
+                            ),
+                          ),
+                        ),
                         const SizedBox(width: 8),
-                        Text(label),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () async {
+                              final time = await showTimePicker(
+                                context: context,
+                                initialTime: selectedStartTime ??
+                                    TimeOfDay.fromDateTime(DateTime.now()),
+                              );
+                              if (time != null) {
+                                setState(() => selectedStartTime = time);
+                              }
+                            },
+                            icon: const Icon(Icons.access_time),
+                            label: Text(
+                              selectedStartTime != null
+                                  ? selectedStartTime!.format(context)
+                                  : 'Start Time',
+                            ),
+                          ),
+                        ),
                       ],
                     ),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  
-                  setState(() => selectedPriority = value!);
-                },
+                    
+                  ],
+                ),
               ),
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Cancel',
-                  style: TextStyle(color: theme.colorScheme.secondary)),
-            ),
-            FilledButton(
-              onPressed: () {
-                if (titleController.text.trim().isNotEmpty) {
-                  context.read<TodoProvider>().addTodo(
-                        titleController.text.trim(),
-                        descriptionController.text.trim(),
-                        priority: selectedPriority,
-                      );
-                  Navigator.pop(context);
-                }
-              },
-              child: const Text('Add Task'),
-            ),
-          ],
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel',
+                style: TextStyle(color: theme.colorScheme.secondary)),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (titleController.text.isNotEmpty &&
+                  selectedStartDate != null &&
+                  selectedStartTime != null) {
+                final startDate = DateTime(
+                  selectedStartDate!.year,
+                  selectedStartDate!.month,
+                  selectedStartDate!.day,
+                  selectedStartTime!.hour,
+                  selectedStartTime!.minute,
+                );
+
+                context.read<TodoProvider>().addTodo(
+                      titleController.text,
+                      descriptionController.text,
+                      startDate: startDate,
+                      priority: selectedPriority,
+                    );
+
+                // Schedule notification
+                NotificationService().scheduleTaskNotification(
+                  id: (DateTime.now().millisecondsSinceEpoch % 100000).toInt(),
+                  title: 'Upcoming Task: ${titleController.text}',
+                  body: 'Your task starts in 10 minutes',
+                  scheduledDate: startDate,
+                );
+
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Add Task'),
+          ),
+        ],
       ),
     );
   }

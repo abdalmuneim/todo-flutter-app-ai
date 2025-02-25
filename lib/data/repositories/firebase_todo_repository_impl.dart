@@ -86,6 +86,10 @@ class FirebaseTodoRepositoryImpl implements TodoRepository {
     }
 
     final currentStatus = todoDoc.data()?['isCompleted'] ?? false;
-    await _todosCollection.doc(id).update({'isCompleted': !currentStatus});
+    final dueDate = todoDoc.data()?['dueDate'] ?? Timestamp.now();
+    await _todosCollection.doc(id).update({
+      'isCompleted': !currentStatus,
+      'dueDate': !currentStatus ? dueDate : null
+    });
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../../domain/entities/todo.dart';
 import '../providers/todo_provider.dart';
 
@@ -8,6 +9,29 @@ class TodoItem extends StatelessWidget {
 
   const TodoItem({super.key, required this.todo});
 
+  String _formatDate(DateTime? date) {
+    if (date == null) return '';
+    final now = DateTime.now();
+    final difference = now.difference(date);
+    if (difference.inDays == 0) {
+      if (difference.inHours == 0) {
+        return '${difference.inMinutes}m ago';
+      }
+      return '${difference.inHours}h ago';
+    } else if (difference.inDays == 1) {
+      return 'Yesterday';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays}d ago';
+    }
+
+    return DateFormat('MMM d, y').format(date);
+  }
+
+  String _formatDateTime(DateTime? date) {
+    if (date == null) return '';
+    return DateFormat('MMM d, y • h:mm a').format(date);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -15,21 +39,21 @@ class TodoItem extends StatelessWidget {
     return Dismissible(
       key: Key(todo.id ?? ""),
       background: Container(
-        color: Colors.red.shade400,
+        color: Colors.red,
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 24),
-        child: const Icon(Icons.delete_outline, color: Colors.white, size: 28),
+        padding: const EdgeInsets.only(right: 16),
+        child: const Icon(
+          Icons.delete,
+          color: Colors.white,
+        ),
       ),
       direction: DismissDirection.endToStart,
       onDismissed: (direction) {
         context.read<TodoProvider>().deleteTodo(todo.id ?? '');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Todo deleted'),
-            behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            backgroundColor: theme.colorScheme.secondary,
+          const SnackBar(
+            content: Text('Todo deleted'),
+            duration: Duration(seconds: 2),
           ),
         );
       },
@@ -65,8 +89,7 @@ class TodoItem extends StatelessWidget {
                           ? TextDecoration.lineThrough
                           : null,
                       color: todo.isCompleted ?? false
-                          ? theme.textTheme.bodyMedium?.color
-                              ?.withValues(alpha: .7)
+                          ? theme.textTheme.bodyMedium?.color?.withValues(alpha: .7)
                           : theme.textTheme.bodyMedium?.color,
                     ),
                   ),
@@ -80,7 +103,7 @@ class TodoItem extends StatelessWidget {
                             todo.description ?? "",
                             style: TextStyle(
                               fontSize: 14,
-                              color: theme.textTheme.bodyMedium?.color?.withOpacity(0.8),
+                              color: theme.textTheme.bodyMedium?.color?.withValues(alpha: .8),
                             ),
                           ),
                         ),
@@ -100,20 +123,62 @@ class TodoItem extends StatelessWidget {
                           Text(
                             '${todo.priority?.name[0].toUpperCase()}${todo.priority?.name.substring(1) ?? ''} Priority',
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6),
+                              color: theme.textTheme.bodyMedium?.color?.withValues(alpha: .6),
                             ),
                           ),
-                          const SizedBox(width: 12),
+                        ],
+                      ),
+                      if (todo.startDate != null) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.calendar_today,
+                              size: 16,
+                              color: theme.colorScheme.primary,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Start: ${_formatDateTime(todo.startDate)}',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      if (todo.dueDate != null) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.event_busy,
+                              size: 16,
+                              color: theme.colorScheme.error,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Due: ${_formatDateTime(todo.dueDate)}',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.error,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
                           Icon(
                             Icons.access_time,
                             size: 16,
-                            color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6),
+                            color: theme.textTheme.bodyMedium?.color?.withValues(alpha: .6),
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            _formatDate(todo.createdAt),
+                            'Created ${_formatDate(todo.createdAt)}',
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6),
+                              color: theme.textTheme.bodyMedium?.color?.withValues(alpha: .6),
                             ),
                           ),
                         ],
@@ -146,25 +211,6 @@ class TodoItem extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _formatDate(DateTime? date) {
-    if (date == null) return '';
-    final now = DateTime.now();
-    final difference = now.difference(date);
-
-    if (difference.inDays == 0) {
-      if (difference.inHours == 0) {
-        return '${difference.inMinutes}m ago';
-      }
-      return '${difference.inHours}h ago';
-    } else if (difference.inDays == 1) {
-      return 'Yesterday';
-    } else if (difference.inDays < 7) {
-      return '${difference.inDays}d ago';
-    }
-
-    return '${date.day}/${date.month}/${date.year}';
   }
 
   void _showEditDialog(BuildContext context) {

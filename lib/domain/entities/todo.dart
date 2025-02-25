@@ -74,6 +74,9 @@ class Todo extends Equatable {
   @HiveField(8)
   final DateTime? dueDate;
 
+  @HiveField(9)
+  final DateTime? startDate;
+
   const Todo({
     this.id,
     this.userId,
@@ -84,6 +87,7 @@ class Todo extends Equatable {
     this.priority = TaskPriority.medium,
     this.subTasks = const [],
     this.dueDate,
+    this.startDate,
   });
 
   Map<String, dynamic> toJson() => {
@@ -96,21 +100,31 @@ class Todo extends Equatable {
         'priority': priority?.index,
         'subTasks': subTasks?.map((st) => st.toJson()).toList(),
         'dueDate': dueDate != null ? Timestamp.fromDate(dueDate!) : null,
+        'startDate': startDate != null ? Timestamp.fromDate(startDate!) : null,
       };
 
   factory Todo.fromJson(Map<String, dynamic> json) => Todo(
-        id: json['id'] as String,
-        userId: json['userId'] as String,
-        title: json['title'] as String,
-        description: json['description'] as String,
-        isCompleted: json['isCompleted'] as bool,
-        createdAt: (json['createdAt'] as Timestamp).toDate(),
-        priority: TaskPriority.values[json['priority'] as int],
-        subTasks: (json['subTasks'] as List<dynamic>)
-            .map((st) => SubTask.fromJson(st as Map<String, dynamic>))
-            .toList(),
+        id: json['id'] as String?,
+        userId: json['userId'] as String?,
+        title: json['title'] as String?,
+        description: json['description'] as String?,
+        isCompleted: json['isCompleted'] as bool?,
+        createdAt: json['createdAt'] != null
+            ? (json['createdAt'] as Timestamp).toDate()
+            : null,
+        priority: json['priority'] != null
+            ? TaskPriority.values[json['priority'] as int]
+            : null,
+        subTasks: json['subTasks'] != null
+            ? (json['subTasks'] as List)
+                .map((st) => SubTask.fromJson(st as Map<String, dynamic>))
+                .toList()
+            : null,
         dueDate: json['dueDate'] != null
             ? (json['dueDate'] as Timestamp).toDate()
+            : null,
+        startDate: json['startDate'] != null
+            ? (json['startDate'] as Timestamp).toDate()
             : null,
       );
 
@@ -121,6 +135,7 @@ class Todo extends Equatable {
     TaskPriority? priority,
     List<SubTask>? subTasks,
     DateTime? dueDate,
+    DateTime? startDate,
   }) {
     return Todo(
       id: id,
@@ -132,6 +147,7 @@ class Todo extends Equatable {
       priority: priority ?? this.priority,
       subTasks: subTasks ?? this.subTasks,
       dueDate: dueDate ?? this.dueDate,
+      startDate: startDate ?? this.startDate,
     );
   }
 
@@ -146,5 +162,6 @@ class Todo extends Equatable {
         priority,
         subTasks,
         dueDate,
+        startDate,
       ];
 }

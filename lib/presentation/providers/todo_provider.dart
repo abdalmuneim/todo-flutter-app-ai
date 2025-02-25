@@ -48,23 +48,30 @@ class TodoProvider with ChangeNotifier {
   Future<void> addTodo(
     String title,
     String description, {
+    DateTime? startDate,
     TaskPriority priority = TaskPriority.medium,
   }) async {
     try {
+      _isLoading = true;
       _error = null;
+      notifyListeners();
+
       final todo = Todo(
         title: title,
+        id: Uuid().v4(),
         description: description,
-        createdAt: DateTime.now(),
         isCompleted: false,
+        createdAt: DateTime.now(),
         priority: priority,
-        subTasks: [],
+        startDate: startDate,
       );
 
       await repository.addTodo(todo);
       await _loadTodos(); // Reload to get the server-generated ID
     } catch (e) {
       _error = e.toString();
+    } finally {
+      _isLoading = false;
       notifyListeners();
     }
   }
