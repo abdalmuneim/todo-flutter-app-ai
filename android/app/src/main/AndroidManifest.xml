@@ -5,7 +5,8 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" /> 
+
     <application
         android:label="TODO AI"
         android:name="${applicationName}"
@@ -34,7 +35,7 @@
                 android:value="task_reminders" />
             <intent-filter>
                 <action android:name="FLUTTER_NOTIFICATION_CLICK" />
-                <category android:name="android.intent.category.task_reminders" />
+                <category android:name="android.intent.category.reminders" />
             </intent-filter>
         
         </activity>
@@ -43,7 +44,7 @@
             android:value="2" />
             
             <!-- Scheduled Notification Receivers -->
-            <receiver android:exported="true" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
+            <!-- <receiver android:exported="true" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
             <receiver android:exported="true" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">
                 <intent-filter>
                     <action android:name="android.intent.action.BOOT_COMPLETED"/>
@@ -51,7 +52,7 @@
                     <action android:name="android.intent.action.QUICKBOOT_POWERON" />
                     <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
                 </intent-filter>
-            </receiver>
+            </receiver> -->
             
     </application>
     <queries>

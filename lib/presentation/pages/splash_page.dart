@@ -15,7 +15,7 @@ class SplashPage extends StatefulWidget {
 class _SplashPageState extends State<SplashPage> {
   @override
   void initState() {
-   NotificationService().init();
+   NotificationService.instance.init();
     super.initState();
     _checkAuth();
   }

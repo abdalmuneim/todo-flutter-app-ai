@@ -1,26 +1,35 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
+import 'package:flutter_timezone/flutter_timezone.dart';
 
 // Top-level function to handle background notifications
 @pragma('vm:entry-point')
 void notificationTapBackground(NotificationResponse notificationResponse) {
-  // Handle notification tap in background
+  debugPrint('Notification tapped: ${notificationResponse.payload}');
+  final data = jsonDecode(notificationResponse.payload ?? '');
+  // NotificationService()
+  //     .showImmediateNotification(title: data['title'], body: data['body']);
 }
 
 class NotificationService {
-  static final NotificationService _instance = NotificationService._();
-  factory NotificationService() => _instance;
+  static final NotificationService instance = NotificationService._();
+  factory NotificationService() => instance;
   NotificationService._();
 
   final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
+  Map<Permission, PermissionStatus> _statuses = {};
 
-  static const AndroidNotificationChannel channel = AndroidNotificationChannel(
+  bool _isInitNotification = false;
+
+  final AndroidNotificationChannel _channel = AndroidNotificationChannel(
     'task_reminders',
     'Task Reminders',
     description: 'Notifications for task reminders',
@@ -31,7 +40,11 @@ class NotificationService {
   );
 
   Future<void> init() async {
+    if (_isInitNotification) return;
+    // init time zone
     tz.initializeTimeZones();
+    String? defaultZone = await FlutterTimezone.getLocalTimezone();
+    tz.setLocalLocation(tz.getLocation(defaultZone));
 
     if (Platform.isAndroid) {
       final androidPlugin =
@@ -41,11 +54,15 @@ class NotificationService {
       // Request notification permissions
       await androidPlugin?.requestNotificationsPermission();
       await androidPlugin?.requestExactAlarmsPermission();
-      await androidPlugin?.requestFullScreenIntentPermission();
 
       // Create notification channel
-      await androidPlugin?.createNotificationChannel(channel);
+      await androidPlugin?.createNotificationChannel(_channel);
     }
+
+    _statuses = await [
+      Permission.notification,
+      Permission.scheduleExactAlarm,
+    ].request();
 
     await _notifications.initialize(
       const InitializationSettings(
@@ -56,42 +73,40 @@ class NotificationService {
           requestSoundPermission: true,
         ),
       ),
-      onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
-      onDidReceiveNotificationResponse: (details) {
-        debugPrint('Notification tapped: ${details.payload}');
-      },
+      // onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
+      // onDidReceiveNotificationResponse: (details) {
+      //   debugPrint('Notification tapped: ${details.payload}');
+      //   final data = jsonDecode(details.payload ?? '');
+      //   // showImmediateNotification(title: data['title'], body: data['body']);
+      // },
     );
-
-    // Test immediate notification
-    // await showImmediateNotification(
-    //   title: "Notification Test",
-    //   body: "This is a test notification. If you see this, notifications are working!",
-    // );
+    _isInitNotification = true;
   }
 
-  Future<void> showImmediateNotification({
+  NotificationDetails _notificationDetails() {
+    return NotificationDetails(
+        android: AndroidNotificationDetails(
+          _channel.id,
+          _channel.name,
+          channelDescription: _channel.description,
+          importance: Importance.max,
+          priority: Priority.high,
+          enableVibration: true,
+        ),
+        iOS: DarwinNotificationDetails());
+  }
+
+  Future<void> _showNotification({
+    int? id,
     required String title,
     required String body,
   }) async {
     try {
       await _notifications.show(
-        DateTime.now().millisecondsSinceEpoch.remainder(100000),
+        id ?? 0,
         title,
         body,
-        NotificationDetails(
-          android: AndroidNotificationDetails(
-            channel.id,
-            channel.name,
-            channelDescription: channel.description,
-            importance: Importance.max,
-            priority: Priority.max,
-            enableLights: true,
-            enableVibration: true,
-            playSound: true,
-            icon: '@mipmap/ic_launcher',
-            channelShowBadge: true,
-          ),
-        ),
+        _notificationDetails(),
       );
       debugPrint('Immediate notification sent successfully');
     } catch (e) {
@@ -101,12 +116,32 @@ class NotificationService {
   }
 
   Future<void> scheduleTaskNotification({
-    required int id,
+    int? id,
     required String title,
     required String body,
     required DateTime scheduledDate,
   }) async {
     try {
+      if (_statuses[Permission.notification]?.isDenied ?? false) {
+        final status = await Permission.notification.request();
+        if (status.isDenied) {
+          throw PlatformException(
+            code: 'notification_permission_denied',
+            message: 'Notification permissions are required for reminders',
+          );
+        }
+      }
+      if (_statuses[Permission.scheduleExactAlarm]?.isDenied ?? false) {
+        final status = await Permission.scheduleExactAlarm.request();
+        if (status.isDenied) {
+          throw PlatformException(
+            code: 'schedule_exact_alarm_permission_denied',
+            message:
+                'Schedule exact alarm permissions are required for reminders',
+          );
+        }
+      }
+
       if (Platform.isAndroid) {
         final androidPlugin =
             _notifications.resolvePlatformSpecificImplementation<
@@ -134,52 +169,43 @@ class NotificationService {
         }
       }
 
-      // First send an immediate test notification
-      // await showImmediateNotification(
-      //   title: "Scheduling Task Reminder",
-      //   body: "Your reminder will be set for: ${scheduledDate.toString()}",
-      // );
-
       // Calculate the scheduled time
       final now = tz.TZDateTime.now(tz.local);
-      var scheduledTime = tz.TZDateTime.from(scheduledDate, tz.local);
+      var scheduledTime = tz.TZDateTime(
+        tz.local,
+        now.year,
+        now.month,
+        now.day,
+        scheduledDate.hour,
+        scheduledDate.minute,
+      );
 
       // If the time is in the past, schedule for 30 seconds from now (for testing)
       if (scheduledTime.isBefore(now)) {
-        scheduledTime = now.add(const Duration(seconds: 30));
+        scheduledTime = now.add(const Duration(seconds: 10));
         debugPrint(
             'Scheduled time was in the past, rescheduling for 30 seconds from now');
       } else {
-        scheduledTime = scheduledTime.subtract(Duration(minutes: 10));
+        scheduledTime = scheduledTime.subtract(Duration(minutes: 5));
       }
       debugPrint('Current time: ${now.toString()}');
       debugPrint('Scheduling notification for: ${scheduledTime.toString()}');
 
       // Schedule the actual notification
       await _notifications.zonedSchedule(
-        id,
+        id ?? 1,
         title,
         body,
         scheduledTime,
-        NotificationDetails(
-          android: AndroidNotificationDetails(
-            channel.id,
-            channel.name,
-            channelDescription: channel.description,
-            importance: Importance.max,
-            priority: Priority.max,
-            enableLights: true,
-            enableVibration: true,
-            playSound: true,
-            icon: '@mipmap/ic_launcher',
-            channelShowBadge: true,
-            fullScreenIntent: true,
-            category: AndroidNotificationCategory.alarm,
-          ),
-        ),
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        payload: jsonEncode({"title": title, "body": body, "id": id}),
+        _notificationDetails(),
+        // android specific: Allow notification while device is in low-power mode
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        // ios specific: use exact time specified (vs relative time)
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
+        //  make notification reapte DAILY at same  time
+        matchDateTimeComponents: DateTimeComponents.dateAndTime,
       );
 
       debugPrint('Notification scheduled successfully');
@@ -191,5 +217,9 @@ class NotificationService {
 
   Future<void> cancelNotification(int id) async {
     await _notifications.cancel(id);
+  }
+
+  Future<void> cancelAllNotification(int id) async {
+    await _notifications.cancelAll();
   }
 }

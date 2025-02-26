@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
@@ -10,7 +9,7 @@ class AuthProvider with ChangeNotifier {
   final firebase_auth.FirebaseAuth _auth = firebase_auth.FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  app.User? _user; 
+  app.User? _user;
   bool _isLoading = false;
   String? _error;
 
@@ -36,7 +35,6 @@ class AuthProvider with ChangeNotifier {
       )
           .then(
         (value) async {
-
           // Ensure the user is not null
           if (value.user == null) {
             throw Exception('User creation failed: User is null');
@@ -75,7 +73,7 @@ class AuthProvider with ChangeNotifier {
           throw err;
         },
       );
-        return true;
+      return true;
     } catch (e) {
       _error = e.toString();
       print('Sign up error: $_error');
@@ -95,16 +93,19 @@ class AuthProvider with ChangeNotifier {
       _error = null;
       notifyListeners();
 
-      final userCredential = await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      final userCredential = await _auth
+          .signInWithEmailAndPassword(
+            email: email,
+            password: password,
+          )
+          .catchError((error) => throw error);
 
       // Get user data from Firestore
       final userDoc = await _firestore
           .collection('users')
           .doc(userCredential.user!.uid)
-          .get();
+          .get()
+          .catchError((error) => throw error);
 
       if (userDoc.exists) {
         _user = app.User.fromJson(userDoc.data()!);
@@ -121,13 +122,15 @@ class AuthProvider with ChangeNotifier {
         await _firestore
             .collection('users')
             .doc(user.id)
-            .set(user.toJson(), SetOptions(merge: true));
+            .set(user.toJson(), SetOptions(merge: true))
+            .catchError((error) => throw error);
 
         _user = user;
       }
     } catch (e) {
       _error = e.toString();
       print('Sign in error: $_error');
+      rethrow;
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -138,7 +141,7 @@ class AuthProvider with ChangeNotifier {
     try {
       await _auth.signOut();
       _user = null;
-      
+
       notifyListeners();
     } catch (e) {
       _error = e.toString();
